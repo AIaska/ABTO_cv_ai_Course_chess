@@ -1,15 +1,15 @@
 #include <iostream>
 #include <string>
 
-#include <opencv2\core.hpp>
-#include <opencv2\highgui.hpp>
-#include <opencv2\imgproc.hpp>
+#include <opencv2/core.hpp>
+#include <opencv2/highgui.hpp>
+#include <opencv2/imgproc.hpp>
 
 #include "opencv2/imgproc.hpp"
 #include "opencv2/highgui.hpp"
-#include "opencv2\xfeatures2d.hpp"
-#include "opencv2\features2d.hpp"
-#include "opencv2\calib3d.hpp"
+#include "opencv2/xfeatures2d.hpp"
+#include "opencv2/features2d.hpp"
+#include "opencv2/calib3d.hpp"
 
 const std::string ImageFolder = "./Images/";
 
@@ -62,7 +62,6 @@ vector<cv::Point> FindContour(cv::Mat img)
 {
 	cv::Mat mask = img.clone();
 	cv::cvtColor(mask, mask, CV_BGR2GRAY);
-	mask = mask*1.5;
 	cv::Canny(mask, mask, 100, 150, 3, false);
 	cv::GaussianBlur(mask, mask, cv::Size(5, 5), 0);
 	cv::equalizeHist(mask, mask);
@@ -82,14 +81,14 @@ vector<cv::Point> FindContour(cv::Mat img)
 	return contours[ind];
 }
 
-//find rectangle method#1
+//find rectangle contour of board method#1
 vector<cv::Point> RectcontourApprox(vector<cv::Point> contour)
 {
 	cv::approxPolyDP(contour, contour, cv::arcLength(contour, true) / 25, true);
 	return contour;
 }
 
-//find rectangle method#2
+//find rectangle contour of board method#2
 vector<cv::Point> RectcontourElipse(vector<cv::Point> contour)
 {
 	cv::Point2f box[4];
@@ -119,55 +118,58 @@ vector<cv::Vec3f> FindCircles(cv::Mat& img)
 	cv::cvtColor(img, imggrey, CV_BGR2GRAY);
 	cv::Mat mask = imggrey*1.5;
 
-	cv::Canny(mask, mask, 100, 256, 3, false);
+	cv::Canny(mask, mask, 100, 150, 3, false);
 	cv::GaussianBlur(mask, mask, cv::Size(5, 5), 0);
 	cv::equalizeHist(mask, mask);
 
-	cv::HoughCircles(mask, circles, CV_HOUGH_GRADIENT, 1, mask.rows / 10, 150, 20, 15, 28);
+	cv::HoughCircles(mask, circles, CV_HOUGH_GRADIENT, 1, mask.rows / 10, 150, 20, 15, 27);
 
 	return circles;
 }
+
+cv::Mat GetTransformed(vector<cv::Point> rect, cv::Mat& img)
+{
+	vector<cv::Point> square;
+	square.push_back(cv::Point(0, 0));
+	square.push_back(cv::Point((float)std::max(norm(rect[0] - rect[1]), norm(rect[2] - rect[3])), 0));
+	square.push_back(cv::Point((float)std::max(norm(rect[0] - rect[1]), norm(rect[2] - rect[3])),
+		(float)std::max(norm(rect[1] - rect[2]), norm(rect[3] - rect[0]))));
+	square.push_back(cv::Point(0, (float)std::max(norm(rect[1] - rect[2]), norm(rect[3] - rect[0]))));
+
+	cv::Mat transform = cv::findHomography(rect, square);
+	cv::Mat res(cv::Size((int)square[1].x, (int)square[2].y), CV_8UC3);
+
+	cv::warpPerspective(img, res, transform, res.size());
+	cv::resize(res, res, cv::Size(440, 440));
+	return res;
+}
+
 void main(int, void*)
 {
-	cv::Mat chess = cv::imread(ImageFolder + "chess4.jpg");
+	cv::Mat chess = cv::imread(ImageFolder + "chess1.jpg");
 	cv::resize(chess, chess,cv::Size(440,440));
 	cv::Mat chesscontour = chess.clone();
 	cv::Mat chesstransformed = chess.clone();
 
-	//findAndDrawCorners(chess);
+	findAndDrawCorners(chess);
 
 	vector<cv::Vec3f> circles = FindCircles(chess);
-
 	int count = DrawAndCountCircles(chess,circles);
-	cout << count << " figures on the board" << endl;
-
+	cout << count - 1 << " figures on the board" << endl;
 	vector<cv::Point> contour = FindContour(chesscontour);
+
+
 	vector<cv::Point> rect1 = RectcontourApprox(contour);
 	vector<cv::Point> rect2 = RectcontourElipse(contour);
 	DrawLines(rect1, chesscontour, cv::Scalar(0, 0, 255));
 	DrawLines(rect2, chesscontour, cv::Scalar(0, 255, 0));
 
-	vector<cv::Point> square;
-	square.push_back(cv::Point(0, 0));
-	square.push_back(cv::Point((float)std::max(norm(rect1[0] - rect1[1]), norm(rect1[2] - rect1[3])), 0));
-	square.push_back(cv::Point((float)std::max(norm(rect1[0] - rect1[1]), norm(rect1[2] - rect1[3])), 
-		(float)std::max(norm(rect1[1] - rect1[2]), norm(rect1[3] - rect1[0]))));
-	square.push_back(cv::Point(0, (float)std::max(norm(rect1[1] - rect1[2]), norm(rect1[3] - rect1[0]))));
+	chesstransformed = GetTransformed(rect1, chesstransformed);
+	vector<cv::Vec3f> circles2 = FindCircles(chesstransformed);
+	count = DrawAndCountCircles(chesstransformed, circles2);
+	cout << count - 1 << " right number of figures on the board" << endl;
 
-	cv::Mat transform = cv::findHomography(rect1, square);
-	cv::Mat res(cv::Size((int)std::max(norm(rect1[0] - rect1[1]), norm(rect1[2] - rect1[3])),
-		(int)std::max(norm(rect1[1] - rect1[2]), norm(rect1[3] - rect1[0]))), CV_8UC3);
-	cv::warpPerspective(chesstransformed, res, transform, res.size());
-	cv::resize(res, res, cv::Size(440, 440));
+	findAndDrawCorners(chesstransformed);
 
-	vector<cv::Vec3f> circles2 = FindCircles(res);
-
-	cv::Mat drawncircles(res.size(), CV_8UC3, cv::Scalar::all(0));
-	DrawAndCountCircles(res, circles2);
-	DrawAndCountCircles(drawncircles, circles2);
-	cv::Mat transforminv = transform.inv();
-	cv::Mat normdrawncircles(cv::Size(440,440),CV_8UC3);
-	cv::warpPerspective(drawncircles, normdrawncircles, transforminv, normdrawncircles.size());
-	chesstransformed = chesstransformed + normdrawncircles;
 	system("pause");
 }
