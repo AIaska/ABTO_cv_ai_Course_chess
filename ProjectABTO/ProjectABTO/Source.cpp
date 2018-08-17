@@ -144,6 +144,44 @@ cv::Mat GetTransformed(vector<cv::Point> rect, cv::Mat& img)
 	return res;
 }
 
+bool isInRect(cv::Vec4i rect, cv::Point center)
+{
+	bool res = false;
+	if ((rect[0] < center.x) && (center.x < rect[1]) && (rect[2] < center.y) && (center.y < rect[3]))
+	{
+		res = true;
+	}
+	return res;
+}
+void createMatBoard(cv::Mat& img, cv::Mat& board, vector<cv::Vec3f> circles)
+{
+	int height = img.size().height;
+	int width = img.size().width;
+	int xstep = width / 8;
+	int ystep = height / 8;
+
+	cv::Vec4i rect(0, 0, 0, 0);
+
+	for (int i = 0; i < 8; i++)
+	{
+		for (int j = 0; j < 8; j++)
+		{
+			rect[0] = i*xstep;
+			rect[1] = (i + 1)*xstep;
+			rect[2] = j*ystep;
+			rect[3] = (j + 1)*ystep;
+			for (int c = 0; c < circles.size(); c++)
+			{
+				if (isInRect(rect, cv::Point(circles[c][0], circles[c][1])))
+				{
+					board.at<uchar>(cv::Point(i, j)) = 40;
+				}
+			}
+			cout << endl;
+		}
+	}
+}
+
 void main(int, void*)
 {
 	cv::Mat chess = cv::imread(ImageFolder + "chess1.jpg");
@@ -169,7 +207,9 @@ void main(int, void*)
 	count = DrawAndCountCircles(chesstransformed, circles2);
 	cout << count - 1 << " right number of figures on the board" << endl;
 
-	findAndDrawCorners(chesstransformed);
+	//findAndDrawCorners(chesstransformed);
+	cv::Mat board(cv::Size(8, 8), CV_8UC1, cv::Scalar::all(0));
+	createMatBoard(chesstransformed, board, circles2);
 
 	system("pause");
 }
