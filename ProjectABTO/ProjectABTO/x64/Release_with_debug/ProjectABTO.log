@@ -1,0 +1,15 @@
+﻿  CheckersDetector.cpp
+CheckersDetector.cpp(99): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
+CheckersDetector.cpp(101): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
+CheckersDetector.cpp(102): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
+CheckersDetector.cpp(133): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
+CheckersDetector.cpp(135): warning C4244: 'argument': conversion from 'float' to 'int', possible loss of data
+CheckersDetector.cpp(152): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+CheckersDetector.cpp(248): warning C4101: 'e': unreferenced local variable
+  Generating code
+  10 of 521 functions ( 1.9%) were compiled, the rest were copied from previous compilation.
+    0 functions were new in current compilation
+    2 functions had inline decision re-evaluated but remain unchanged
+  Finished generating code
+  ProjectABTO.vcxproj -> D:\Mу projects new\ProjectABTO\x64\Release_with_debug\ProjectABTO.exe
+  ProjectABTO.vcxproj -> D:\Mу projects new\ProjectABTO\x64\Release_with_debug\ProjectABTO.pdb (Full PDB)
