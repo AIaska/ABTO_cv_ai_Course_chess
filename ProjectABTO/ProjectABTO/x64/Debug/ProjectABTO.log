@@ -1,3 +1,0 @@
-﻿  Source.cpp
-Source.obj : error LNK2019: unresolved external symbol "void __cdecl cv::cvtColor(class cv::debug_build_guard::_InputArray const &,class cv::debug_build_guard::_OutputArray const &,int,int)" (?cvtColor@cv@@YAXAEBV_InputArray@debug_build_guard@1@AEBV_OutputArray@31@HH@Z) referenced in function main
-D:\Mу projects new\ProjectABTO\x64\Debug\ProjectABTO.exe : fatal error LNK1120: 1 unresolved externals
