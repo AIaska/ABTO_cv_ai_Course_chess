@@ -28,6 +28,12 @@ namespace ISXCheckersDetector
 		{
 			//load video from path
 			camera.open(path);
+
+			if (!camera.isOpened())
+			{
+				std::cerr << "Can't find video";
+				return;
+			}
 		}
 
 		~CheckersDetector()

@@ -171,7 +171,7 @@ namespace ISXCheckersDetector
 					if (isInRect(rect, cv::Point(circles[c][0], circles[c][1])))
 					{
 						t = img.at<cv::Vec3b>(cv::Point(circles[c][0], circles[c][1])).val[0];
-						if (t > 150)
+						if (t > 100)
 						{
 							board.at<uchar>(cv::Point(i, j)) = 200;
 						}
@@ -272,16 +272,15 @@ namespace ISXCheckersDetector
 					DrawLines(rect1, chesscontour, cv::Scalar(0, 0, 255));
 					DrawLines(rect2, chesscontour, cv::Scalar(0, 255, 0));
 
-					if (!IsContourOK(rect2))
+					if (!IsContourOK(rect1))
 					{
 						throw std::exception("Found wrong contour");
 					}
-					chesstransformed = GetTransformed(rect2, chesstransformed);
+					chesstransformed = GetTransformed(rect1, chesstransformed);
 
 					std::vector<cv::Vec3f> circles2;
 					if (!FindCircles(chesstransformed, circles2))
 					{
-						std::cerr << "             HELLO             " << std::endl;
 						throw std::exception("Cannot find circles");
 					}
 					count = DrawAndCountCircles(chesstransformed, circles2);
