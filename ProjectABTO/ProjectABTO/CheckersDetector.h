@@ -46,7 +46,7 @@ namespace ISXCheckersDetector
 		//void DetectPictures(std::wstring file_path); // path to images
 		
 		bool FindAndDrawCorners(cv::Mat& img); //function to detect inner corners of chessboard
-		void MainCannel(cv::Mat& img);
+		void MainCannel(cv::Mat& img); 
 		int DrawAndCountCircles(cv::Mat& img, std::vector<cv::Vec3f> circles); //Detect and count circles on the picture
 		std::vector<cv::Point> FindContour(cv::Mat img); //function to find contour with the biggest area
 		std::vector<cv::Point> RectcontourApprox(std::vector<cv::Point> contour) //find rectangle contour of board method#1
@@ -62,7 +62,7 @@ namespace ISXCheckersDetector
 				cv::line(img, vec[i], vec[(i + 1) % 4], color, 1, cv::LINE_AA);
 			}
 		}
-		std::vector<cv::Vec3f> FindCircles(cv::Mat& img);
+		bool FindCircles(cv::Mat& img, std::vector<cv::Vec3f>& circles);
 		cv::Mat GetTransformed(std::vector<cv::Point> rect, cv::Mat& img);
 		bool isInRect(cv::Vec4i rect, cv::Point center)
 		{
@@ -74,11 +74,12 @@ namespace ISXCheckersDetector
 			return res;
 		}
 		void createMatBoard(cv::Mat& img, cv::Mat& board, std::vector<cv::Vec3f> circles);
-		cv::Mat AvgBoard(std::list<cv::Mat> boards);
+		cv::Mat AvgBoard(std::list<cv::Mat> boards, float win_proc);
 		bool IsContourOK(std::vector<cv::Point> rect);
 
+
 private:
-		cv::VideoCapture camera;
+		cv::VideoCapture camera/*("D:\\Users\\Mariia\\ABTO_cv_ai_course\\Chekers\\Chekers\\Video\\V80821-194057.mp4")*/;
 		ISXFrame::Frame frame;
 	};
 }

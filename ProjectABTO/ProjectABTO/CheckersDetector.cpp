@@ -11,7 +11,7 @@ namespace ISXCheckersDetector
 		{
 			std::cerr << "Chessboard corners not found\n";
 		}
-		cv::drawChessboardCorners(img, paternsize, cv::Mat::Mat(corners), is_found);
+		cv::drawChessboardCorners(img, paternsize, corners, is_found);
 		return is_found;
 	}
 
@@ -86,19 +86,27 @@ namespace ISXCheckersDetector
 	}
 
 
-	std::vector<cv::Vec3f> CheckersDetector::FindCircles(cv::Mat& img)
+	bool CheckersDetector::FindCircles(cv::Mat& img, std::vector<cv::Vec3f>& circles)
 	{
-		std::vector<cv::Vec3f> circles;
 		cv::Mat mask;
 		img.copyTo(mask);
 		MainCannel(mask);
 		cv::cvtColor(mask, mask, CV_BGR2GRAY);
+		cv::Mat temp;
+		cv::threshold(mask, temp, 80, 256, CV_THRESH_BINARY); //depends on lightness
+		if ((float)cv::countNonZero(temp) / (temp.size().width*temp.size().height) > 0.62)
+		{
+			return false;
+		}
 		cv::GaussianBlur(mask, mask, cv::Size(3, 3), 0);
+		cv::morphologyEx(mask, mask, cv::MORPH_OPEN, cv::getStructuringElement(cv::MORPH_RECT, cv::Size(5, 5)));
+		cv::morphologyEx(mask, mask, cv::MORPH_CLOSE, cv::getStructuringElement(cv::MORPH_RECT, cv::Size(5, 5)));
+
 		cv::Canny(mask, mask, 40, 0, 3, false);
 
 		cv::HoughCircles(mask, circles, CV_HOUGH_GRADIENT, 1, mask.rows / 10, 150, 20, 15, 27);
 
-		return circles;
+		return true;
 	}
 
 	cv::Mat CheckersDetector::GetTransformed(std::vector<cv::Point> rect, cv::Mat& img)
@@ -141,8 +149,8 @@ namespace ISXCheckersDetector
 
 	void CheckersDetector::createMatBoard(cv::Mat& img, cv::Mat& board, std::vector<cv::Vec3f> circles)
 	{
-		int height = img.size().height - 30;
-		int width = img.size().width - 30;
+		int height = img.size().height - 60;
+		int width = img.size().width - 60;
 		int xstep = width / 8;
 		int ystep = height / 8;
 
@@ -154,10 +162,10 @@ namespace ISXCheckersDetector
 		{
 			for (int j = 0; j < 8; j++)
 			{
-				rect[0] = 15 + i*xstep;
-				rect[1] = 15 + (i + 1)*xstep;
-				rect[2] = 15 + j*ystep;
-				rect[3] = 15 + (j + 1)*ystep;
+				rect[0] = 30 + i*xstep;
+				rect[1] = 30 + (i + 1)*xstep;
+				rect[2] = 30 + j*ystep;
+				rect[3] = 30 + (j + 1)*ystep;
 				for (int c = 0; c < circles.size(); c++)
 				{
 					if (isInRect(rect, cv::Point(circles[c][0], circles[c][1])))
@@ -177,13 +185,12 @@ namespace ISXCheckersDetector
 		}
 	}
 
-	//remember few old boards and get average of them
-	cv::Mat CheckersDetector::AvgBoard(std::list<cv::Mat> boards)
+	cv::Mat CheckersDetector::AvgBoard(std::list<cv::Mat> boards, float win_proc)
 	{
 		int n = boards.size();
 		cv::Mat res(cv::Size(8, 8), CV_8UC1, cv::Scalar::all(0));
 
-		for (std::list<cv::Mat>::iterator it = boards.begin(); it != boards.end(); it++)
+		for (std::list<cv::Mat>::iterator it = boards.begin(); it!=boards.end();it++)
 		{
 			res = res + (*it).clone() / n;
 		}
@@ -191,11 +198,11 @@ namespace ISXCheckersDetector
 		{
 			for (int j = 0; j < 8; j++)
 			{
-				if (res.at<uchar>(cv::Point(i, j)) >= 146)
+				if (res.at<uchar>(cv::Point(i, j)) >= (200 *win_proc + 128 * (1-win_proc)))
 				{
 					res.at<uchar>(cv::Point(i, j)) = 200;
 				}
-				else if (res.at<uchar>(cv::Point(i, j)) <= 106)
+				else if (res.at<uchar>(cv::Point(i, j)) <= (40 * win_proc + 128 * (1-win_proc)))
 				{
 					res.at<uchar>(cv::Point(i, j)) = 40;
 				}
@@ -207,8 +214,6 @@ namespace ISXCheckersDetector
 		}
 		return res;
 	}
-
-	// check if found rect contour is ok
 	bool CheckersDetector::IsContourOK(std::vector<cv::Point> rect)
 	{
 		if (rect.size() != 4)
@@ -249,16 +254,11 @@ namespace ISXCheckersDetector
 
 			if (interval_in_sec <= duration_after_frame.count())
 			{
-				//if ()
-				//{
-				//	std::cout << "The board is empty.";
-				//	system("pause");
-				//}
-
 				try
 				{
-
 					cv::Mat chess = CaptureFrame().get_frame();
+
+					cv::Mat output;
 					cv::imshow("chess", chess);
 					cv::waitKey(100);
 
@@ -266,47 +266,46 @@ namespace ISXCheckersDetector
 					cv::Mat chesstransformed = chess.clone();
 					int count;
 
-					//FindAndDrawCorners(chess);
-
 					std::vector<cv::Point> contour = FindContour(chesscontour);
-
 					std::vector<cv::Point> rect1 = RectcontourApprox(contour);
 					std::vector<cv::Point> rect2 = RectcontourElipse(contour);
 					DrawLines(rect1, chesscontour, cv::Scalar(0, 0, 255));
 					DrawLines(rect2, chesscontour, cv::Scalar(0, 255, 0));
-					cv::imshow("chesscontour", chesscontour);
 
 					if (!IsContourOK(rect2))
 					{
 						throw std::exception("Found wrong contour");
 					}
-
 					chesstransformed = GetTransformed(rect2, chesstransformed);
-					std::vector<cv::Vec3f> circles2 = FindCircles(chesstransformed);
-					count = DrawAndCountCircles(chesstransformed, circles2);
-					std::cout << count - 1 << " right number of figures on the board\n";
 
-					//findAndDrawCorners(chesstransformed);
-					cv::Mat board(cv::Size(8, 8), CV_8UC1, cv::Scalar::all(0));
+					std::vector<cv::Vec3f> circles2;
+					if (!FindCircles(chesstransformed, circles2))
+					{
+						std::cerr << "             HELLO             " << std::endl;
+						throw std::exception("Cannot find circles");
+					}
+					count = DrawAndCountCircles(chesstransformed, circles2);
+					std::cerr << count - 1 << " right number of figures on the board" << std::endl;
+
+					cv::Mat board(cv::Size(8, 8), CV_8UC1, cv::Scalar::all(128));
 					createMatBoard(chesstransformed, board, circles2);
-					if (boards.size() >= 8)
+
+					if (boards.size() >= 10)
 					{
 						boards.pop_front();
 						boards.push_back(board);
-						board = AvgBoard(boards);
+						board = AvgBoard(boards,0.3);
 					}
 					else
 					{
 						boards.push_back(board.clone());
 					}
 
-					cv::resize(board, board, chesstransformed.size(), 0, 0, cv::INTER_AREA);
+					cv::resize(board, board, chesstransformed.size(),0,0,cv::INTER_AREA);
 					cv::cvtColor(board, board, cv::COLOR_GRAY2BGR);
-					cv::Mat output;
-					cv::hconcat(chesstransformed, board, output);
+					cv::hconcat(std::vector<cv::Mat>{chesstransformed, board}, output);
 					cv::imshow("output", output);
-
-					cv::waitKey(500);
+					cv::waitKey(200);
 				}
 				catch (const std::exception& e)
 				{

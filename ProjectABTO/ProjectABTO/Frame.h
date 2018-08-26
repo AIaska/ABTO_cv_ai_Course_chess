@@ -24,7 +24,7 @@ namespace ISXFrame
 				cv::imwrite(saving_path_and_name, frame);
 			}
 		}
-
+		
 		void ShowFrame()
 		{
 			if (frame.empty())
@@ -36,7 +36,7 @@ namespace ISXFrame
 				cv::imshow("Output", frame);
 			}
 		}
-
+		
 		cv::Mat& get_frame()
 		{
 			if (frame.empty())
@@ -45,7 +45,7 @@ namespace ISXFrame
 			}
 			return  frame;
 		}
-
+		
 		Frame& operator = (const cv::Mat& new_frame)
 		{
 			this->frame = new_frame;
