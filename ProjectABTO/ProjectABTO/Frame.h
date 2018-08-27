@@ -13,18 +13,6 @@ namespace ISXFrame
 		Frame() {};
 		~Frame() {};
 
-		void SaveFrameToFile(std::string saving_path_and_name)
-		{
-			if (frame.empty())
-			{
-				std::cerr << "Frame not valid\n";
-			}
-			else
-			{
-				cv::imwrite(saving_path_and_name, frame);
-			}
-		}
-		
 		void ShowFrame()
 		{
 			if (frame.empty())
@@ -36,16 +24,16 @@ namespace ISXFrame
 				cv::imshow("Output", frame);
 			}
 		}
-		
+
 		cv::Mat& get_frame()
 		{
 			if (frame.empty())
 			{
-				std::cerr << "Frame not valid\n";
+				//std::cerr << "Frame not valid\n";
 			}
 			return  frame;
 		}
-		
+
 		Frame& operator = (const cv::Mat& new_frame)
 		{
 			this->frame = new_frame;
